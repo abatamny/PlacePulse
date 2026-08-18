@@ -34,4 +34,4 @@ The queue itself begins in Milestone 6.
 Media keys are server generated and never contain client filenames. AI schemas
 carry explicit model and schema versions, treat all inputs and outputs as
 untrusted, and do not allow a model to invent factual places. Runtime media and
-AI services are outside Milestones 0–2.
+AI services are outside Milestones 0–3.

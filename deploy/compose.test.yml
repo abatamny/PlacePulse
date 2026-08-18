@@ -1,7 +1,15 @@
 # Use only with an isolated Compose project name and disposable volumes.
 services:
+  api:
+    environment:
+      PLACEPULSE_ENV: test
+
+  bootstrap:
+    environment:
+      PLACEPULSE_ENV: test
+
   test-runner:
-    image: placepulse-backend:milestone-2
+    image: placepulse-backend:milestone-3
     build:
       context: ..
       dockerfile: backend/Dockerfile
@@ -46,5 +54,21 @@ services:
     tmpfs:
       - /tmp:size=128m,mode=1777
     init: true
+    security_opt:
+      - no-new-privileges:true
+
+  e2e:
+    image: placepulse-e2e:milestone-3
+    build:
+      context: ..
+      dockerfile: tests/e2e/Dockerfile
+    environment:
+      PLACEPULSE_E2E_BASE_URL: http://localhost
+    depends_on:
+      web:
+        condition: service_healthy
+    network_mode: service:web
+    init: true
+    ipc: host
     security_opt:
       - no-new-privileges:true

@@ -13,10 +13,11 @@ The plan is based on the PlacePulse project proposal, the project-wide course gu
 | 0 - Repository Foundation and Contracts | Complete | 2026-08-18 |
 | 1 - PostgreSQL/PostGIS and Redis | Complete | 2026-08-18 |
 | 2 - Backend Image, API, and Bootstrap | Complete | 2026-08-18 |
-| 3 - Web Container and React Shell | Next; not started | - |
+| 3 - Web Container and React Shell | Complete | 2026-08-18 |
 
-Milestone 3 is the next active milestone. No Milestone 3 implementation is
-included in the Milestones 0-2 completion state.
+Milestone 4 is the next active milestone. Milestone 3 provides the compiled
+React PWA, Caddy-only public gateway, same-origin API and WebSocket routing,
+and browser system-test foundation.
 
 ## Core Architecture Decisions
 
@@ -117,7 +118,8 @@ Optional diagnostic ports may be defined in `compose.debug.yml` and bound only t
 
 | Network | Members | Purpose |
 | --- | --- | --- |
-| `edge` | `web`, `api` | Allows Caddy to proxy requests to FastAPI. |
+| `ingress` | `web` | Allows Docker to publish only Caddy's HTTP and HTTPS ports to the host. |
+| `edge` | `web`, `api` | Internal network allowing Caddy to proxy requests to FastAPI. |
 | `core` | `api`, `worker`, `postgres`, `redis`, `minio`, `bootstrap` | Carries application data, queues, presence, and storage traffic. |
 | `ai` | `worker`, `ollama`, `qwen-guard`, `model-init` | Isolates the local AI services from clients and the web tier. |
 
@@ -223,6 +225,8 @@ queue-processing behavior remain deferred until Milestone 6.
 
 ## Milestone 3 - Web Container and React Shell
 
+**Status: Complete (verified 2026-08-18).**
+
 Create the only client-facing container.
 
 ### Work
@@ -237,10 +241,10 @@ Create the only client-facing container.
 
 ### Exit criteria
 
-- PlacePulse opens through `http://localhost:8080`.
-- React can call the API through Caddy.
-- WebSockets pass through Caddy.
-- Direct host access to the API, database, storage, and models is unavailable.
+- [x] PlacePulse opens through `http://localhost:8080`.
+- [x] React can call the API through Caddy.
+- [x] WebSockets pass through Caddy.
+- [x] Direct host access to the API, database, storage, and models is unavailable.
 
 ## Milestone 4 - First Complete Location Slice
 

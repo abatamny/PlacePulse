@@ -12,4 +12,4 @@ source revision timestamp is 2026-07-07T16:19:01Z.
 The coordinate arrays are `[longitude, latitude]` in EPSG:4326. Bootstrap
 validates the fixture identity, closure, coordinate ranges, and PostGIS geometry
 validity before inserting it. This fixture contains only the campus boundary;
-the nested Taub building is deliberately excluded from Milestones 0–2.
+the nested Taub building is deliberately excluded from Milestones 0–3.

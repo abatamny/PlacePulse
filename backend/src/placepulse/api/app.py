@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -67,9 +67,10 @@ def create_app(
     clients: ServiceClients | None = None,
     client_factory: ClientFactory = _default_client_factory,
 ) -> FastAPI:
+    active_settings = settings or get_settings()
+
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-        active_settings = settings or get_settings()
         configure_logging(active_settings.log_level, active_settings.env)
         active_clients = clients or client_factory(active_settings)
         application.state.settings = active_settings
@@ -179,6 +180,23 @@ def create_app(
                 "dependencies": {"postgres": postgres_state, "redis": redis_state},
             },
         )
+
+    if active_settings.env == "test":
+
+        @application.post("/_test/body")
+        async def request_body_transport_probe(request: Request) -> dict[str, int]:
+            body = await request.body()
+            return {"size": len(body)}
+
+        @application.websocket("/ws/_test/echo")
+        async def websocket_transport_probe(websocket: WebSocket) -> None:
+            await websocket.accept()
+            message = await websocket.receive_text()
+            if len(message) > 128:
+                await websocket.close(code=1009)
+                return
+            await websocket.send_text(message)
+            await websocket.close(code=1000)
 
     return application
 

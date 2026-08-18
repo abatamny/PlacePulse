@@ -1,3 +1,7 @@
-# Local behavior intentionally matches the canonical graph. The web service will
-# publish 8080/8443 when Milestone 3 is implemented.
-services: {}
+# Local behavior intentionally matches the canonical graph. Only the web
+# gateway is published to the host.
+services:
+  web:
+    ports:
+      - "0.0.0.0:8080:80"
+      - "0.0.0.0:8443:443"
