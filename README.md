@@ -1,8 +1,9 @@
 # PlacePulse
 
 PlacePulse is a mobile-first, place-centered social application. Milestones 0–2
-provide the contracts, PostgreSQL/PostGIS and Redis infrastructure, shared
-FastAPI backend image, health endpoints, migrations, and deterministic cold seed.
+are complete. They provide the contracts, PostgreSQL/PostGIS and Redis
+infrastructure, shared FastAPI backend image, health endpoints, migrations, and
+deterministic cold seed.
 There is no browser-facing application or public URL until Milestone 3.
 
 ## Prerequisites

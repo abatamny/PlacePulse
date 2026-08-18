@@ -6,6 +6,18 @@ This document defines the high-level implementation order for PlacePulse, the ta
 
 The plan is based on the PlacePulse project proposal, the project-wide course guidelines, and Abed's project-specific guidelines.
 
+## Implementation Status
+
+| Milestone | Status | Verified |
+| --- | --- | --- |
+| 0 - Repository Foundation and Contracts | Complete | 2026-08-18 |
+| 1 - PostgreSQL/PostGIS and Redis | Complete | 2026-08-18 |
+| 2 - Backend Image, API, and Bootstrap | Complete | 2026-08-18 |
+| 3 - Web Container and React Shell | Next; not started | - |
+
+Milestone 3 is the next active milestone. No Milestone 3 implementation is
+included in the Milestones 0-2 completion state.
+
 ## Core Architecture Decisions
 
 - Development and Azure production must provide the same features and use the same runtime service graph.
@@ -132,6 +144,8 @@ The intended access rules are:
 
 ## Milestone 0 - Repository Foundation and Contracts
 
+**Status: Complete (verified 2026-08-18).**
+
 Establish the project structure and cross-service contracts before implementing features.
 
 ### Work
@@ -150,12 +164,14 @@ Establish the project structure and cross-service contracts before implementing 
 
 ### Exit criteria
 
-- `docker compose config` succeeds.
-- The documented directory and configuration structure exists.
-- No secrets are committed.
-- Cross-service contracts are documented and testable.
+- [x] `docker compose config` succeeds.
+- [x] The documented directory and configuration structure exists.
+- [x] No secrets are committed.
+- [x] Cross-service contracts are documented and testable.
 
 ## Milestone 1 - PostgreSQL/PostGIS and Redis
+
+**Status: Complete (verified 2026-08-18).**
 
 Build the core persistent-data and coordination infrastructure.
 
@@ -170,11 +186,13 @@ Build the core persistent-data and coordination infrastructure.
 
 ### Exit criteria
 
-- PostgreSQL and Redis become healthy from a clean start.
-- PostGIS spatial types and functions are available.
-- Data survives a normal container restart.
+- [x] PostgreSQL and Redis become healthy from a clean start.
+- [x] PostGIS spatial types and functions are available.
+- [x] Data survives a normal container restart.
 
 ## Milestone 2 - Backend Image, API, and Bootstrap
+
+**Status: Complete (verified 2026-08-18).**
 
 Create the shared backend image and the first runnable backend services.
 
@@ -198,10 +216,10 @@ queue-processing behavior remain deferred until Milestone 6.
 
 ### Exit criteria
 
-- `bootstrap` completes successfully from an empty database.
-- Re-running `bootstrap` does not duplicate seeded data.
-- API liveness and readiness checks pass.
-- API starts only after required infrastructure is ready.
+- [x] `bootstrap` completes successfully from an empty database.
+- [x] Re-running `bootstrap` does not duplicate seeded data.
+- [x] API liveness and readiness checks pass.
+- [x] API starts only after required infrastructure is ready.
 
 ## Milestone 3 - Web Container and React Shell
 
