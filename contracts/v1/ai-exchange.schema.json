@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placepulse.local/contracts/v1/ai-exchange.schema.json",
+  "title": "PlacePulse AI request or response",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schema_version", "request_id", "job_id", "task_type", "model", "input"],
+      "properties": {
+        "kind": { "const": "request" },
+        "schema_version": { "const": 1 },
+        "request_id": { "type": "string", "format": "uuid" },
+        "job_id": { "type": "string", "format": "uuid" },
+        "task_type": {
+          "enum": ["text_safety", "place_layer_selection", "media_inspection", "explore_analysis"]
+        },
+        "model": { "$ref": "#/$defs/model" },
+        "input": { "type": "object" },
+        "allowed_place_candidate_ids": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "type": "string", "format": "uuid" }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schema_version", "request_id", "job_id", "task_type", "model", "decision", "reason_codes", "output"],
+      "properties": {
+        "kind": { "const": "response" },
+        "schema_version": { "const": 1 },
+        "request_id": { "type": "string", "format": "uuid" },
+        "job_id": { "type": "string", "format": "uuid" },
+        "task_type": {
+          "enum": ["text_safety", "place_layer_selection", "media_inspection", "explore_analysis"]
+        },
+        "model": { "$ref": "#/$defs/model" },
+        "decision": { "enum": ["pass", "reject", "unknown"] },
+        "reason_codes": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" }
+        },
+        "output": { "type": "object" }
+      }
+    }
+  ],
+  "$defs": {
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "version": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    }
+  }
+}

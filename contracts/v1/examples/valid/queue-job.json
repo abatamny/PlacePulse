@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "job_id": "699cdd61-83d7-4eea-a6a8-93b99cdd716d",
+  "job_type": "moderation.text",
+  "actor_id": "78e30171-75d2-4324-a29e-a73b74dc0744",
+  "idempotency_key": "post:90c8e8fb:moderate:v1",
+  "idempotency_scope": "actor_id+job_type+idempotency_key",
+  "state": "queued",
+  "attempt": 0,
+  "max_attempts": 3,
+  "created_at": "2026-08-18T10:30:00Z",
+  "correlation_id": null,
+  "payload": { "content_id": "90c8e8fb-43b6-431b-9023-d9a17261a9af" }
+}

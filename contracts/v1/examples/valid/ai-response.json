@@ -1,0 +1,11 @@
+{
+  "kind": "response",
+  "schema_version": 1,
+  "request_id": "0fb72570-f975-43c4-a038-b2c0c66bed93",
+  "job_id": "699cdd61-83d7-4eea-a6a8-93b99cdd716d",
+  "task_type": "place_layer_selection",
+  "model": { "name": "qwen3.5", "version": "pinned-later" },
+  "decision": "unknown",
+  "reason_codes": ["AMBIGUOUS_INTENT"],
+  "output": {}
+}

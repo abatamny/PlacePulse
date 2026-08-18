@@ -1,0 +1,18 @@
+[
+  { "schema": "api-response.schema.json", "example": "valid/api-success.json", "valid": true },
+  { "schema": "api-response.schema.json", "example": "valid/api-error.json", "valid": true },
+  { "schema": "api-response.schema.json", "example": "valid/api-validation.json", "valid": true },
+  { "schema": "api-response.schema.json", "example": "valid/api-cursor-page.json", "valid": true },
+  { "schema": "api-response.schema.json", "example": "invalid/api-error-lowercase-code.json", "valid": false },
+  { "schema": "websocket-envelope.schema.json", "example": "valid/websocket-event.json", "valid": true },
+  { "schema": "websocket-envelope.schema.json", "example": "invalid/websocket-event-bad-time.json", "valid": false },
+  { "schema": "queue-job.schema.json", "example": "valid/queue-job.json", "valid": true },
+  { "schema": "queue-job.schema.json", "example": "invalid/queue-job-too-many-attempts.json", "valid": false },
+  { "schema": "queue-transition.schema.json", "example": "valid/queue-transition-retry.json", "valid": true },
+  { "schema": "queue-transition.schema.json", "example": "invalid/queue-transition-retry-rejection.json", "valid": false },
+  { "schema": "media-object.schema.json", "example": "valid/media-object.json", "valid": true },
+  { "schema": "media-object.schema.json", "example": "invalid/media-object-client-path.json", "valid": false },
+  { "schema": "ai-exchange.schema.json", "example": "valid/ai-request.json", "valid": true },
+  { "schema": "ai-exchange.schema.json", "example": "valid/ai-response.json", "valid": true },
+  { "schema": "ai-exchange.schema.json", "example": "invalid/ai-response-approve.json", "valid": false }
+]

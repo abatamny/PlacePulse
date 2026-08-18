@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placepulse.local/contracts/v1/queue-transition.schema.json",
+  "title": "PlacePulse queue state transition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "job_id",
+    "from_state",
+    "to_state",
+    "attempt",
+    "reason_kind",
+    "next_retry_delay_seconds"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "job_id": { "type": "string", "format": "uuid" },
+    "from_state": { "enum": ["queued", "processing"] },
+    "to_state": {
+      "enum": ["queued", "processing", "passed", "rejected", "failed", "cancelled", "expired"]
+    },
+    "attempt": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "reason_kind": {
+      "type": ["string", "null"],
+      "enum": [null, "transient", "validation", "moderation", "exhausted", "cancelled", "expired"]
+    },
+    "next_retry_delay_seconds": { "type": ["integer", "null"], "enum": [null, 1, 2] }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "from_state": { "const": "queued" },
+        "to_state": { "const": "processing" },
+        "reason_kind": { "const": null },
+        "next_retry_delay_seconds": { "const": null }
+      }
+    },
+    {
+      "properties": {
+        "from_state": { "const": "processing" },
+        "to_state": { "const": "queued" },
+        "reason_kind": { "const": "transient" }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "attempt": { "const": 1 },
+            "next_retry_delay_seconds": { "const": 1 }
+          }
+        },
+        {
+          "properties": {
+            "attempt": { "const": 2 },
+            "next_retry_delay_seconds": { "const": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "properties": {
+        "from_state": { "const": "processing" },
+        "to_state": { "enum": ["passed", "failed"] },
+        "reason_kind": { "enum": [null, "transient", "exhausted"] },
+        "next_retry_delay_seconds": { "const": null }
+      }
+    },
+    {
+      "properties": {
+        "from_state": { "const": "processing" },
+        "to_state": { "const": "rejected" },
+        "reason_kind": { "enum": ["validation", "moderation"] },
+        "next_retry_delay_seconds": { "const": null }
+      }
+    },
+    {
+      "properties": {
+        "from_state": { "enum": ["queued", "processing"] },
+        "to_state": { "enum": ["cancelled", "expired"] },
+        "reason_kind": { "enum": ["cancelled", "expired"] },
+        "next_retry_delay_seconds": { "const": null }
+      }
+    }
+  ]
+}

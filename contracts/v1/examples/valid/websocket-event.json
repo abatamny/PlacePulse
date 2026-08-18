@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "id": "677d5ace-c4f7-47ee-95d0-5644bd212a36",
+  "type": "presence.updated",
+  "occurred_at": "2026-08-18T10:30:00Z",
+  "correlation_id": "0fb72570-f975-43c4-a038-b2c0c66bed93",
+  "payload": { "place_id": "fb80646d-d5b3-4c89-93f0-26f325545a16" }
+}

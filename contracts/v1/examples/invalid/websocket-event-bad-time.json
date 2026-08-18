@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "id": "677d5ace-c4f7-47ee-95d0-5644bd212a36",
+  "type": "presence.updated",
+  "occurred_at": "yesterday",
+  "payload": {}
+}
