@@ -1,0 +1,17 @@
+{
+  "data": {
+    "status": "unknown",
+    "latitude": 32.77768,
+    "longitude": 35.02152,
+    "selected_place": null,
+    "containment_path": [],
+    "uncertain_places": [],
+    "selection": {
+      "strategy": "deepest_confident_containing",
+      "reason_code": "NO_KNOWN_PLACE"
+    },
+    "visit": null
+  },
+  "meta": { "schema_version": 1 },
+  "request_id": "0fb72570-f975-43c4-a038-b2c0c66bed93"
+}

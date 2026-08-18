@@ -1,0 +1,17 @@
+{
+  "data": {
+    "authenticated": true,
+    "user": {
+      "id": "5a1f13aa-92cc-4a20-836b-6b9a7a3c5f11",
+      "handle": "Campus_User",
+      "email": "person@example.test",
+      "verification": {
+        "status": "pending_provider_configuration",
+        "login_allowed": true
+      }
+    },
+    "csrf_token": "fQNYkrN3cDPf7gX41GNkjEeY0Q_a5C-4Yq8YwwYgucE"
+  },
+  "meta": { "schema_version": 1 },
+  "request_id": "0fb72570-f975-43c4-a038-b2c0c66bed93"
+}

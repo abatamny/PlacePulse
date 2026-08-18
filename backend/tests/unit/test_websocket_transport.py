@@ -75,7 +75,7 @@ async def test_transport_probe_is_available_only_in_test_environment(
         settings=settings.model_copy(update={"env": "local"}),
         clients=ServiceClients(FakeClient(), FakeClient()),
     )
-    test_only_paths = {"/_test/body", "/ws/_test/echo"}
+    test_only_paths = {"/_test/body", "/_test/client-ip", "/ws/_test/echo"}
     assert all(getattr(route, "path", None) not in test_only_paths for route in local_app.routes)
 
 

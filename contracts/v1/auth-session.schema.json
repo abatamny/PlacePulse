@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placepulse.local/contracts/v1/auth-session.schema.json",
+  "title": "PlacePulse authentication session response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["data", "meta", "request_id"],
+  "properties": {
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authenticated", "user", "csrf_token"],
+      "properties": {
+        "authenticated": { "type": "boolean" },
+        "user": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/user" }
+          ]
+        },
+        "csrf_token": { "type": "string", "minLength": 32, "maxLength": 128 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "authenticated": { "const": true } } },
+          "then": { "properties": { "user": { "$ref": "#/$defs/user" } } },
+          "else": { "properties": { "user": { "type": "null" } } }
+        }
+      ]
+    },
+    "meta": { "$ref": "#/$defs/meta" },
+    "request_id": { "type": "string", "format": "uuid" }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version"],
+      "properties": { "schema_version": { "const": 1 } }
+    },
+    "user": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "handle", "email", "verification"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "handle": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "email": { "type": "string", "format": "email" },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "login_allowed"],
+          "properties": {
+            "status": { "enum": ["pending_provider_configuration", "verified"] },
+            "login_allowed": { "const": true }
+          }
+        }
+      }
+    }
+  }
+}
