@@ -15,12 +15,18 @@ The plan is based on the PlacePulse project proposal, the project-wide course gu
 | 2 - Backend Image, API, and Bootstrap | Complete | 2026-08-18 |
 | 3 - Web Container and React Shell | Complete | 2026-08-18 |
 | 4 - First Complete Location Slice | Complete | 2026-08-18 |
+| 4.5 - Signed-In Radar and Place Interaction | Planned | - |
 
 Milestone 4 passed its clean Docker Compose workflow on 2026-08-18: migrations
 and seeds ran from empty volumes, all backend and integration checks passed,
 the compiled web/API stack became healthy, logs contained no sensitive
 location or authentication values, and the isolated mobile Playwright suite
 passed through Caddy.
+
+Milestone 4.5 is the next planned milestone. It separates the authenticated
+application from the public account-entry experience and introduces the first
+small, persisted, text-only place interaction slice without pulling forward
+foreground presence, live WebSocket delivery, media, reactions, or AI.
 
 ## Core Architecture Decisions
 
@@ -281,6 +287,116 @@ Implement the smallest end-to-end version of the central PlacePulse concept.
 - Location errors do not cause fabricated place results.
 - The complete slice has unit, integration, and browser tests.
 
+## Milestone 4.5 - Signed-In Radar and Place Interaction
+
+**Status: Planned.**
+
+Replace the signed-in version of the public login page with a dedicated,
+mobile-first application view. The selected physical place remains the
+authoritative context: the Radar shows recent text posts for that place, a post
+can be opened and authored, and its author can be contacted through a basic
+persisted KNOCK thread. This milestone is intentionally non-realtime; it must
+not imply that an active visit proves foreground presence.
+
+In this milestone, "nearby" means the user's current server-recorded place. A
+Radar item is a visual representation of place activity, not a claim about the
+post author's precise direction or distance. Raw coordinates are not stored on
+posts, KNOCK threads, or messages and are never returned by these APIs.
+
+### Signed-in experience
+
+- Keep registration and login in the public account-entry experience.
+- After login, or when restoring an authenticated session, enter a dedicated
+  authenticated application shell instead of leaving the user on the landing
+  page with only the location card changed.
+- Make `Radar` the default signed-in tab and add an accessible `KNOCKS` tab.
+- Keep the current handle, online/offline state, selected place, place
+  hierarchy, and explicit `Find`, `Refresh`, `Leave`, and `Sign out` actions
+  available without returning to the public page.
+- If no visit is active, show an honest location-gated empty state and request
+  geolocation only after the user presses the location action.
+- Use a mobile-first, full-height layout with touch-sized controls, keyboard
+  operation, visible focus, reduced-motion support, and no horizontal overflow.
+- Keep private posts, messages, location responses, and authenticated API data
+  out of the service-worker cache.
+
+### Radar and posts
+
+- Present recent posts from the exact active place in a radar-inspired visual
+  surface with an equivalent accessible list. Do not place posts by invented
+  bearings or distances.
+- Use the existing seeded forum posts as real initial content; do not add
+  hard-coded production mocks.
+- Return posts through an authenticated, cursor-paginated API with stable
+  ordering, author handle, bounded body preview, and timezone-aware creation
+  time.
+- Allow a Radar item to open a post detail sheet or screen with a direct link
+  that survives refresh and browser navigation.
+- Allow an authenticated user with an active visit to create a text-only post
+  for the exact server-recorded place. Do not trust a client-supplied place as
+  authorization.
+- Validate and trim post bodies, enforce the existing 1-to-2,000 character
+  bound, apply per-user rate limits, and make rapid duplicate submissions
+  idempotent.
+- Defer titles, anonymity, comments, reactions, images, videos, and cross-layer
+  forum browsing to their existing later milestones.
+
+### KNOCKS
+
+- Let a user start a KNOCK with another post's author from the post detail
+  view; do not expose a nearby-user list before foreground presence exists.
+- Add persisted KNOCK threads and bounded text messages through a forward
+  Alembic migration, with explicit place and originating-post context.
+- Show the user's threads and message history in the `KNOCKS` tab with clear
+  empty, loading, error, unread, and sent states.
+- Authorize both thread participants on every read and write, prevent users
+  from KNOCKing themselves, and do not reveal threads through guessable IDs.
+- Apply per-user and per-thread rate limits, bounded pagination, idempotent
+  sends, and stable error codes.
+- Use request/refresh delivery in Milestone 4.5. Foreground recipient discovery,
+  WebSocket delivery, reconnect behavior, and notifications remain Milestone 5.
+
+### Content-safety boundary
+
+- Treat post and KNOCK text as untrusted input, never render it as HTML, and
+  enforce server-side length, validation, authorization, and spam controls.
+- Add explicit moderation-state fields and audit timestamps through a forward
+  migration now so Milestone 8 can connect QwenGuard without rewriting content
+  history.
+- Document the provisional pre-model policy. QwenGuard remains the required
+  text-safety and jailbreak gate before the complete social feature set is
+  considered release-ready; moderation must not be represented as active
+  before that service exists.
+
+### Tests and documentation
+
+- Add unit tests for feed mapping, validation, authorization, pagination,
+  idempotency, tab state, and reduced-motion behavior.
+- Add integration tests with real PostgreSQL and Redis for place isolation,
+  post creation, KNOCK participant access, persistence, rate limits, and
+  duplicate requests.
+- Extend the mobile Playwright flow through Caddy to cover login-to-Radar
+  transition, session restoration, location gating, seeded posts, post detail,
+  post creation, KNOCK creation/history, refresh delivery, offline behavior,
+  direct-route authorization, Leave, and logout.
+- Update the root and frontend READMEs with the signed-in navigation, endpoint
+  contracts, current moderation boundary, and manual test flow.
+
+### Exit criteria
+
+- A successful login and an authenticated session restore open the signed-in
+  application shell rather than the public account-entry view.
+- A located user can browse the exact current place's persisted Radar posts,
+  open a post, and create a text-only post; a user without an active visit
+  cannot read or write place content.
+- A user can KNOCK a post author, open the resulting thread, send text, and
+  retrieve persisted history without any claim of foreground presence or live
+  delivery.
+- Posts and KNOCK threads are isolated by place and participant authorization,
+  and rapid duplicate actions do not create duplicate content.
+- The responsive and accessibility checks plus relevant unit, integration,
+  security, and browser tests pass through the documented Docker workflow.
+
 ## Milestone 5 - Presence and Real-Time Communication
 
 Add foreground presence and live place-based communication.
@@ -291,8 +407,8 @@ Add foreground presence and live place-based communication.
 - Extend explicit visits with history views and rank calculation.
 - Implement `VISITOR` and `BELONG` behavior.
 - Add authenticated WebSocket connections.
-- Implement basic KNOCK messaging.
-- Implement live forum updates.
+- Upgrade KNOCK threads to foreground-aware routing and live delivery.
+- Publish live Radar/forum updates for the persisted Milestone 4.5 posts.
 - Implement direct-message delivery and notifications.
 - Add reconnect, timeout, and stale-presence cleanup behavior.
 
@@ -385,8 +501,9 @@ Finish the project proposal and the place-specific forum requirements.
 
 ### Work
 
-- Implement a separate forum for each physical place.
-- Add posts with title, body, anonymity, images, and videos.
+- Complete the separate forum for each physical place, extending Milestone
+  4.5's exact-place text feed across the authorized place experience.
+- Extend text-only posts with titles, anonymity, images, and videos.
 - Add comments with text, images, and videos.
 - Add likes and dislikes on posts and comments.
 - Add user post history and reaction totals.
