@@ -10,16 +10,18 @@ from redis.asyncio import Redis
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from placepulse.bootstrap import SEED_VERSION, apply_seed
+from placepulse.bootstrap import LOCATION_SEED_VERSION, SEED_VERSION, apply_seed
 from placepulse.config import get_settings
 
 pytestmark = pytest.mark.integration
 
 
-def test_alembic_upgrade_is_idempotent() -> None:
+def test_alembic_upgrades_an_existing_foundation_and_is_idempotent() -> None:
     settings = get_settings()
     config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
     config.attributes["database_url"] = settings.database_url
+    command.downgrade(config, "0001_foundation")
+    command.upgrade(config, "head")
     command.upgrade(config, "head")
 
 
@@ -53,9 +55,25 @@ async def test_postgis_seed_and_bootstrap_rerun_are_stable(tmp_path: Path) -> No
                     "FROM places WHERE osm_type = 'way' AND osm_id = 66098525"
                 )
             )
+            nested = (
+                await connection.execute(
+                    text(
+                        "SELECT child.parent_place_id = parent.id, "
+                        "ST_Covers(parent.boundary, child.boundary) "
+                        "FROM places child JOIN places parent ON parent.id = child.parent_place_id "
+                        "WHERE child.osm_type = 'way' AND child.osm_id = 67222155"
+                    )
+                )
+            ).one()
+            location_seed = await connection.scalar(
+                text("SELECT count(*) FROM seed_registry WHERE seed_version = :version"),
+                {"version": LOCATION_SEED_VERSION},
+            )
         assert extension is not None
-        assert before[:5] == (3, 1, 2, 3, 1)
+        assert before[:5] == (3, 2, 2, 3, 1)
         assert covers is True
+        assert nested == (True, True)
+        assert location_seed == 1
         assert isinstance(before[5], str) and before[5].startswith("$argon2id$")
         assert before[6] == 3
         PasswordHasher().verify(before[5], settings.seed_password)
