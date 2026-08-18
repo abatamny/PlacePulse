@@ -12,8 +12,14 @@ def test_foundation_metadata_declares_expected_tables_and_spatial_type() -> None
         "forum_posts",
         "forum_comments",
         "seed_registry",
+        "visits",
     }
     boundary = Base.metadata.tables["places"].c.boundary
     assert isinstance(boundary.type, Geometry)
     assert boundary.type.geometry_type == "MULTIPOLYGON"
     assert boundary.type.srid == 4326
+    assert Base.metadata.tables["users"].c.email_verified_at.nullable is True
+    assert Base.metadata.tables["visits"].c.exited_at.nullable is True
+    assert "ix_places_boundary_geography_gist" in {
+        index.name for index in Base.metadata.tables["places"].indexes
+    }

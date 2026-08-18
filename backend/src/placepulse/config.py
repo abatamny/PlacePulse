@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     redis_pool_size: int = Field(default=20, ge=1, le=100)
     connect_timeout_seconds: float = Field(default=2.0, gt=0, le=10)
     readiness_timeout_seconds: float = Field(default=1.0, gt=0, le=5)
+    session_ttl_seconds: int = Field(default=43_200, ge=300, le=604_800)
+    max_location_accuracy_meters: float = Field(default=100.0, gt=0, le=1_000)
 
     @property
     def database_url(self) -> URL:

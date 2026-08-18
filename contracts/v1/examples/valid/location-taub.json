@@ -1,0 +1,41 @@
+{
+  "data": {
+    "status": "resolved",
+    "selected_place": {
+      "id": "aa1f13aa-92cc-4a20-836b-6b9a7a3c5f11",
+      "name": "Taub Computer Science Building",
+      "osm_type": "way",
+      "osm_id": 67222155,
+      "parent_place_id": "bb1f13aa-92cc-4a20-836b-6b9a7a3c5f11"
+    },
+    "containment_path": [
+      {
+        "id": "aa1f13aa-92cc-4a20-836b-6b9a7a3c5f11",
+        "name": "Taub Computer Science Building",
+        "osm_type": "way",
+        "osm_id": 67222155,
+        "parent_place_id": "bb1f13aa-92cc-4a20-836b-6b9a7a3c5f11"
+      },
+      {
+        "id": "bb1f13aa-92cc-4a20-836b-6b9a7a3c5f11",
+        "name": "Technion - Israel Institute of Technology",
+        "osm_type": "way",
+        "osm_id": 66098525,
+        "parent_place_id": null
+      }
+    ],
+    "uncertain_places": [],
+    "selection": {
+      "strategy": "deepest_confident_containing",
+      "reason_code": "DEEPEST_CONFIDENT_PLACE"
+    },
+    "visit": {
+      "id": "cc1f13aa-92cc-4a20-836b-6b9a7a3c5f11",
+      "place_id": "aa1f13aa-92cc-4a20-836b-6b9a7a3c5f11",
+      "entered_at": "2026-08-18T12:00:00Z",
+      "exited_at": null
+    }
+  },
+  "meta": { "schema_version": 1 },
+  "request_id": "0fb72570-f975-43c4-a038-b2c0c66bed93"
+}

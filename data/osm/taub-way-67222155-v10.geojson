@@ -1,0 +1,37 @@
+{
+  "type": "Feature",
+  "properties": {
+    "osm_type": "way",
+    "osm_id": 67222155,
+    "osm_version": 10,
+    "source_updated_at": "2026-06-07T19:29:33Z",
+    "source_url": "https://www.openstreetmap.org/way/67222155/history/10",
+    "attribution": "© OpenStreetMap contributors",
+    "license": "ODbL-1.0",
+    "name": "בנין טאוב למדעי המחשב",
+    "name_en": "Taub Computer Science Building",
+    "name_he": "בנין טאוב למדעי המחשב",
+    "building": "university",
+    "height": "10 m",
+    "max_level": "7"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [35.0211146, 32.7776444],
+        [35.0212717, 32.777493],
+        [35.0215064, 32.7772958],
+        [35.0215786, 32.7773508],
+        [35.0216531, 32.7773992],
+        [35.0216183, 32.7774214],
+        [35.0215763, 32.7774498],
+        [35.0219324, 32.7777311],
+        [35.0217631, 32.7778807],
+        [35.0217084, 32.777929],
+        [35.0216049, 32.7780236],
+        [35.0211146, 32.7776444]
+      ]
+    ]
+  }
+}

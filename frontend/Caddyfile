@@ -28,7 +28,9 @@
 	}
 
 	handle_path /api/* {
-		reverse_proxy api:8000
+		reverse_proxy api:8000 {
+			header_up X-PlacePulse-Client-IP {remote_host}
+		}
 	}
 
 	handle /ws/* {

@@ -15,6 +15,7 @@ from sqlalchemy import (
     UniqueConstraint,
     desc,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -38,6 +39,9 @@ class User(Base):
     handle: Mapped[str] = mapped_column(String(32), nullable=False)
     email: Mapped[str] = mapped_column(String(254), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    email_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -52,6 +56,11 @@ class Place(Base):
         CheckConstraint("char_length(name) BETWEEN 1 AND 200", name="ck_places_name_length"),
         UniqueConstraint("osm_type", "osm_id", name="uq_places_osm_identity"),
         Index("ix_places_boundary_gist", "boundary", postgresql_using="gist"),
+        Index(
+            "ix_places_boundary_geography_gist",
+            text("(boundary::geography)"),
+            postgresql_using="gist",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
@@ -126,6 +135,36 @@ class SeedRegistry(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, nullable=False)
+
+
+class Visit(Base):
+    __tablename__ = "visits"
+    __table_args__ = (
+        CheckConstraint(
+            "exited_at IS NULL OR exited_at >= entered_at",
+            name="ck_visits_exit_after_entry",
+        ),
+        Index(
+            "uq_visits_one_active_per_user",
+            "user_id",
+            unique=True,
+            postgresql_where=text("exited_at IS NULL"),
+        ),
+        Index("ix_visits_user_entered", "user_id", desc("entered_at")),
+        Index("ix_visits_place_entered", "place_id", desc("entered_at")),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    place_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("places.id", ondelete="RESTRICT"), nullable=False
+    )
+    entered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    exited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 Index("uq_users_handle_ci", func.lower(User.handle), unique=True)

@@ -14,10 +14,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from placepulse.api.errors import DomainError
+from placepulse.api.features import install_feature_routes, trusted_client_ip
+from placepulse.auth import AuthService
 from placepulse.config import Settings, get_settings
 from placepulse.database import DatabaseClient
+from placepulse.location import LocationService
 from placepulse.logging import configure_logging, request_id_context
 from placepulse.redis_client import RedisClient
+from placepulse.security import PasswordService
+from placepulse.verification import DisabledVerificationProvider, VerificationProvider
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +40,13 @@ class ServiceClients:
 
     async def close(self) -> None:
         await asyncio.gather(self.postgres.close(), self.redis.close())
+
+
+@dataclass
+class FeatureServices:
+    auth: AuthService
+    location: LocationService
+    verification: VerificationProvider
 
 
 ClientFactory = Callable[[Settings], ServiceClients]
@@ -65,6 +78,7 @@ def create_app(
     *,
     settings: Settings | None = None,
     clients: ServiceClients | None = None,
+    feature_services: FeatureServices | None = None,
     client_factory: ClientFactory = _default_client_factory,
 ) -> FastAPI:
     active_settings = settings or get_settings()
@@ -75,12 +89,35 @@ def create_app(
         active_clients = clients or client_factory(active_settings)
         application.state.settings = active_settings
         application.state.clients = active_clients
+        if feature_services is not None:
+            application.state.auth_service = feature_services.auth
+            application.state.location_service = feature_services.location
+            application.state.verification_provider = feature_services.verification
+        elif isinstance(active_clients.postgres, DatabaseClient) and isinstance(
+            active_clients.redis, RedisClient
+        ):
+            passwords = PasswordService()
+            application.state.auth_service = AuthService(
+                active_clients.postgres.engine,
+                active_clients.redis.client,
+                active_settings,
+                passwords,
+            )
+            application.state.location_service = LocationService(
+                active_clients.postgres.engine, active_settings
+            )
+            application.state.verification_provider = DisabledVerificationProvider()
         try:
             yield
         finally:
             await active_clients.close()
 
-    application = FastAPI(title="PlacePulse API", version="0.1.0", lifespan=lifespan)
+    application = FastAPI(
+        title="PlacePulse API",
+        version="0.1.0",
+        root_path="/api",
+        lifespan=lifespan,
+    )
 
     @application.middleware("http")
     async def correlation_and_logging(request: Request, call_next: Callable[[Request], Any]) -> Any:
@@ -125,6 +162,26 @@ def create_app(
                 },
                 "request_id": request_id_context.get(),
             },
+            headers={"Cache-Control": "no-store"},
+        )
+
+    @application.exception_handler(DomainError)
+    async def domain_error(request: Request, exc: DomainError) -> JSONResponse:
+        del request
+        headers = {"Cache-Control": "no-store"}
+        if exc.retry_after is not None:
+            headers["Retry-After"] = str(exc.retry_after)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": {
+                    "code": exc.code,
+                    "message": exc.message,
+                    "details": exc.details,
+                },
+                "request_id": request_id_context.get(),
+            },
+            headers=headers,
         )
 
     @application.exception_handler(StarletteHTTPException)
@@ -142,6 +199,7 @@ def create_app(
                 "error": {"code": code, "message": message, "details": None},
                 "request_id": request_id_context.get(),
             },
+            headers={"Cache-Control": "no-store"},
         )
 
     @application.exception_handler(Exception)
@@ -158,6 +216,7 @@ def create_app(
                 },
                 "request_id": request_id_context.get(),
             },
+            headers={"Cache-Control": "no-store"},
         )
 
     @application.get("/health/live", include_in_schema=True)
@@ -172,6 +231,7 @@ def create_app(
             _dependency_state(active_clients.postgres, active_settings.readiness_timeout_seconds),
             _dependency_state(active_clients.redis, active_settings.readiness_timeout_seconds),
         )
+
         ready_now = postgres_state == redis_state == "ok"
         return JSONResponse(
             status_code=200 if ready_now else 503,
@@ -181,12 +241,18 @@ def create_app(
             },
         )
 
+    install_feature_routes(application)
+
     if active_settings.env == "test":
 
         @application.post("/_test/body")
         async def request_body_transport_probe(request: Request) -> dict[str, int]:
             body = await request.body()
             return {"size": len(body)}
+
+        @application.get("/_test/client-ip")
+        async def client_ip_transport_probe(request: Request) -> dict[str, str]:
+            return {"client_ip": trusted_client_ip(request)}
 
         @application.websocket("/ws/_test/echo")
         async def websocket_transport_probe(websocket: WebSocket) -> None:

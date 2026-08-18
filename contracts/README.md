@@ -1,16 +1,19 @@
 # PlacePulse cross-service contracts
 
 The JSON files in `v1/` use JSON Schema 2020-12 and are the language-neutral
-contract for future HTTP, WebSocket, queue, media, and AI integrations. Contract
+contract for HTTP, WebSocket, queue, media, and AI integrations. Contract
 examples are validated by `backend/tests/contracts/test_contract_examples.py`.
 
 ## HTTP
 
-Future REST endpoints use `/api/v1`. Successful feature responses use `data`,
-`meta`, and a UUID `request_id`. Failures use a stable machine-readable
-error code and never expose stack traces, dependency hostnames, SQL, prompts, or
-secrets. Health endpoints are deliberately smaller and are documented in the
-root and backend READMEs.
+Browser REST endpoints use same-origin `/api`; Caddy removes that prefix before
+proxying the documented FastAPI paths. Successful feature responses use `data`,
+`meta`, and a UUID `request_id`. `auth-session.schema.json` and
+`location-response.schema.json` pin Milestone 4 response shapes, including the
+rule that location responses never contain raw coordinates. Failures use a
+stable machine-readable error code and never expose stack traces, dependency
+hostnames, SQL, prompts, or secrets. Health endpoints are deliberately smaller
+and are documented in the root and backend READMEs.
 
 ## WebSocket
 
@@ -34,4 +37,4 @@ The queue itself begins in Milestone 6.
 Media keys are server generated and never contain client filenames. AI schemas
 carry explicit model and schema versions, treat all inputs and outputs as
 untrusted, and do not allow a model to invent factual places. Runtime media and
-AI services are outside Milestones 0–3.
+AI services are outside Milestone 4.

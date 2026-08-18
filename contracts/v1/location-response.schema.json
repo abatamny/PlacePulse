@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placepulse.local/contracts/v1/location-response.schema.json",
+  "title": "PlacePulse location response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["data", "meta", "request_id"],
+  "properties": {
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "selected_place", "containment_path", "uncertain_places", "selection", "visit"],
+      "properties": {
+        "status": { "enum": ["resolved", "unknown", "ambiguous", "low_accuracy", "inactive"] },
+        "selected_place": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/place" }] },
+        "containment_path": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/place" } },
+        "uncertain_places": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/place" } },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["strategy", "reason_code"],
+          "properties": {
+            "strategy": { "enum": ["deepest_confident_containing", "recorded_active_visit"] },
+            "reason_code": {
+              "enum": [
+                "DEEPEST_CONFIDENT_PLACE",
+                "PARENT_SELECTED_FOR_ACCURACY",
+                "ACCURACY_TOO_LOW",
+                "ACCURACY_OVERLAPS_BOUNDARY",
+                "OVERLAPPING_PLACE_HIERARCHIES",
+                "NO_KNOWN_PLACE",
+                "RECORDED_ACTIVE_VISIT",
+                "NO_ACTIVE_VISIT",
+                "VISIT_LEFT"
+              ]
+            }
+          }
+        },
+        "visit": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/visit" }] }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version"],
+      "properties": { "schema_version": { "const": 1 } }
+    },
+    "request_id": { "type": "string", "format": "uuid" }
+  },
+  "$defs": {
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "osm_type", "osm_id", "parent_place_id"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "osm_type": { "enum": ["node", "way", "relation"] },
+        "osm_id": { "type": "integer", "minimum": 1 },
+        "parent_place_id": { "type": ["string", "null"], "format": "uuid" }
+      }
+    },
+    "visit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "place_id", "entered_at", "exited_at"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "place_id": { "type": "string", "format": "uuid" },
+        "entered_at": { "type": "string", "format": "date-time" },
+        "exited_at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    }
+  }
+}

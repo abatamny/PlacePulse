@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from placepulse.bootstrap import FIXTURE_PATH, load_and_validate_fixture
+from placepulse.bootstrap import (
+    FIXTURE_PATH,
+    load_and_validate_fixture,
+    load_and_validate_taub_fixture,
+)
 
 
 def _ring_covers_point(ring: list[list[float]], longitude: float, latitude: float) -> bool:
@@ -38,3 +42,12 @@ def test_fixture_validation_rejects_a_non_closed_ring(tmp_path: Path) -> None:
     )
     with pytest.raises(RuntimeError, match="not closed"):
         load_and_validate_fixture(broken)
+
+
+def test_taub_fixture_is_pinned_and_nested_test_point_is_inside() -> None:
+    feature = load_and_validate_taub_fixture()
+    assert feature["properties"]["osm_id"] == 67_222_155
+    assert feature["properties"]["osm_version"] == 10
+    assert feature["properties"]["source_updated_at"] == "2026-06-07T19:29:33Z"
+    ring = feature["geometry"]["coordinates"][0]
+    assert _ring_covers_point(ring, 35.02152, 32.77768)

@@ -27,5 +27,9 @@ def test_foundation_migration_renders_from_an_empty_revision(
     assert "CREATE EXTENSION IF NOT EXISTS postgis" in rendered
     assert "geometry(MULTIPOLYGON,4326)" in rendered
     assert "CREATE INDEX ix_places_boundary_gist" in rendered
+    assert "ADD COLUMN email_verified_at TIMESTAMP WITH TIME ZONE" in rendered
+    assert "CREATE TABLE visits" in rendered
+    assert "uq_visits_one_active_per_user" in rendered
+    assert "ix_places_boundary_geography_gist" in rendered
     assert "offline" not in rendered
     assert "render-password" not in rendered

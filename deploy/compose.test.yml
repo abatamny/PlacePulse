@@ -9,7 +9,7 @@ services:
       PLACEPULSE_ENV: test
 
   test-runner:
-    image: placepulse-backend:milestone-3
+    image: placepulse-backend:milestone-4
     build:
       context: ..
       dockerfile: backend/Dockerfile
@@ -58,7 +58,7 @@ services:
       - no-new-privileges:true
 
   e2e:
-    image: placepulse-e2e:milestone-3
+    image: placepulse-e2e:milestone-4
     build:
       context: ..
       dockerfile: tests/e2e/Dockerfile
