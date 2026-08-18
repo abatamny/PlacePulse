@@ -1,10 +1,9 @@
 # PlacePulse
 
-PlacePulse is a mobile-first, place-centered social application. Milestones 0–2
-are complete. They provide the contracts, PostgreSQL/PostGIS and Redis
-infrastructure, shared FastAPI backend image, health endpoints, migrations, and
-deterministic cold seed.
-There is no browser-facing application or public URL until Milestone 3.
+PlacePulse is a mobile-first, place-centered social application. Milestones 0–3
+are complete. The current vertical foundation includes versioned contracts,
+PostgreSQL/PostGIS and Redis, the shared FastAPI backend image, migrations and
+deterministic cold seed, plus a compiled React PWA served through Caddy.
 
 ## Prerequisites
 
@@ -43,6 +42,10 @@ containers as files under `/run/secrets`. They are never embedded in images.
 The seed password is hashed with Argon2id on first insertion; changing it later
 does not rotate an existing seed account.
 
+Runtime profiles are selected by Compose, not by `.env`: the canonical graph is
+`local`, the Azure overlay is `azure`, and only the test overlay enables `test`.
+This keeps test-only transport probes out of normal local and Azure deployments.
+
 Secret-consuming services keep `no-new-privileges` enabled, and the backend
 runs as a dedicated non-root user. Their root filesystems remain writable
 because current Docker Desktop cannot inject environment-backed Compose secrets
@@ -61,8 +64,18 @@ docker compose ps
 docker compose logs --no-color
 ```
 
-The standard local and Azure graphs publish no ports in Milestones 0–2. Use the
-debug overlay only for localhost diagnostics:
+The local application is available only through Caddy:
+
+- `http://localhost:8080`
+- `https://localhost:8443`
+
+The HTTPS endpoint uses Caddy's local development authority, so a browser may
+show a certificate warning until that authority is trusted. The `web` service
+is the only service with host port bindings. It uses a dedicated host-facing
+`ingress` network and the internal `edge` network to proxy to the API; the API,
+PostgreSQL, and Redis stay unpublished.
+
+Use the debug overlay only for direct localhost API diagnostics:
 
 ```sh
 docker compose -f deploy/compose.yml -f deploy/compose.debug.yml up -d
@@ -79,7 +92,15 @@ private. It must never be enabled on Azure.
   cold seed in one transaction.
 - `api` waits for healthy PostgreSQL and Redis and for `bootstrap` to complete.
 
-With the debug overlay enabled:
+Through the normal Caddy route:
+
+```sh
+curl http://127.0.0.1:8080/api/health/live
+curl http://127.0.0.1:8080/api/health/ready
+```
+
+With the debug overlay enabled, the same endpoints are also reachable directly
+for diagnostics:
 
 ```sh
 curl http://127.0.0.1:8000/health/live
@@ -101,7 +122,22 @@ docker compose -p placepulse-test \
 The test runner first applies Ruff and strict mypy gates, then covers contracts,
 settings, health behavior, request IDs, logging redaction, migrations, real
 PostgreSQL/PostGIS and Redis connectivity, spatial containment, and seed
-idempotency. Test project volumes must never be shared with local development.
+idempotency. It also verifies that the transport-only WebSocket probe is
+available exclusively in the test profile. Test project volumes must never be
+shared with local development.
+
+Run the compiled frontend system tests through Caddy and Chromium:
+
+```sh
+docker compose -p placepulse-e2e-test \
+  -f deploy/compose.yml \
+  -f deploy/compose.test.yml \
+  run --rm --build e2e
+```
+
+These tests cover narrow-screen layout, SPA fallback, React-to-API routing,
+security and cache headers, compression, request-size enforcement, WebSocket
+upgrades, service-worker cache isolation, and offline shell behavior.
 
 On PowerShell, the isolated normal-restart persistence check is:
 
@@ -129,14 +165,16 @@ backend/        FastAPI package, migrations, bootstrap, and backend tests
 contracts/      Versioned cross-service JSON Schemas and examples
 data/osm/       Reviewed, version-pinned OSM seed fixture and licence notice
 deploy/         Canonical Compose graph and environment/test/debug overlays
-frontend/       Milestone 3 placeholder
-tests/          Future browser and load-test layout
+frontend/       Strict React/Vite PWA, Caddy config, and web image
+tests/          Browser system tests plus future load-test layout
 ```
 
 ## Current scope boundaries
 
-There is no authentication or social-content API yet. WebSockets, foreground
-presence, the worker and fair queue, media handling, MinIO, and local AI services
-remain assigned to their later milestones. The shared backend image deliberately
-has no default worker or Uvicorn command; Compose supplies explicit commands for
-`api`, `bootstrap`, and `test-runner`.
+There is no authentication or social-content API yet. Caddy supports WebSocket
+upgrades, but application WebSocket behavior, foreground presence, the worker
+and fair queue, media handling, MinIO, and local AI services remain assigned to
+later milestones. A small echo endpoint exists only in the test profile to prove
+the WebSocket transport path. The shared backend image deliberately has no
+default worker or Uvicorn command; Compose supplies explicit commands for
+`api`, `bootstrap`, and tests.

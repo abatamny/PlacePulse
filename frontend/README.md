@@ -1,4 +1,28 @@
-# Frontend placeholder
+# PlacePulse frontend
 
-The React, Vite, TypeScript, and Caddy frontend begins in Milestone 3. Milestones
-0–2 intentionally provide no browser-facing service or public application URL.
+The frontend is a strict TypeScript React PWA built by Vite and served only as
+compiled static files from the `web` Caddy container. The browser uses
+same-origin `/api` and `/ws` routes; it never connects directly to FastAPI or
+infrastructure services.
+
+The service worker caches only the public application shell and hashed static
+assets. API, WebSocket, location, message, and media requests are always kept
+out of its caches. Updates wait for an explicit user action before activating.
+
+Local host tooling is optional. When Node.js is available, the focused checks
+are:
+
+```sh
+npm ci
+npm run check
+npm run test
+npm run build
+```
+
+The supported clean-checkout workflow remains Docker Compose from the
+repository root.
+
+After configuring `.env`, start the stack with `docker compose up -d --build`.
+Use `http://localhost:8080` for normal local development or
+`https://localhost:8443` when testing a secure context. Caddy generates a local
+development certificate; browsers may warn until its local authority is trusted.
