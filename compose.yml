@@ -1,0 +1,5 @@
+# Local convenience entry point. deploy/compose.yml remains the canonical graph.
+include:
+  - path:
+      - deploy/compose.yml
+      - deploy/compose.local.yml

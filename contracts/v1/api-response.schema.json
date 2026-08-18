@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placepulse.local/contracts/v1/api-response.schema.json",
+  "title": "PlacePulse API response",
+  "oneOf": [
+    { "$ref": "#/$defs/success" },
+    { "$ref": "#/$defs/cursor_page" },
+    { "$ref": "#/$defs/error" },
+    { "$ref": "#/$defs/validation_error" }
+  ],
+  "$defs": {
+    "request_id": { "type": "string", "format": "uuid" },
+    "success": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data", "meta", "request_id"],
+      "properties": {
+        "data": {},
+        "meta": {
+          "type": "object",
+          "not": { "required": ["next_cursor", "has_more"] }
+        },
+        "request_id": { "$ref": "#/$defs/request_id" }
+      }
+    },
+    "cursor_page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data", "meta", "request_id"],
+      "properties": {
+        "data": { "type": "array" },
+        "meta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["next_cursor", "has_more"],
+          "properties": {
+            "next_cursor": { "type": ["string", "null"], "minLength": 1, "maxLength": 512 },
+            "has_more": { "type": "boolean" }
+          }
+        },
+        "request_id": { "$ref": "#/$defs/request_id" }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error", "request_id"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message", "details"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$",
+              "not": { "const": "VALIDATION_ERROR" }
+            },
+            "message": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "details": { "type": ["object", "array", "null"] }
+          }
+        },
+        "request_id": { "$ref": "#/$defs/request_id" }
+      }
+    },
+    "validation_error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error", "request_id"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message", "details"],
+          "properties": {
+            "code": { "const": "VALIDATION_ERROR" },
+            "message": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "details": {
+              "type": "array",
+              "maxItems": 128,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["field", "code"],
+                "properties": {
+                  "field": { "type": "string", "minLength": 1, "maxLength": 256 },
+                  "code": { "type": "string", "minLength": 1, "maxLength": 128 }
+                }
+              }
+            }
+          }
+        },
+        "request_id": { "$ref": "#/$defs/request_id" }
+      }
+    }
+  }
+}

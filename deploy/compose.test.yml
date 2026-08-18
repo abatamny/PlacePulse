@@ -1,0 +1,50 @@
+# Use only with an isolated Compose project name and disposable volumes.
+services:
+  test-runner:
+    image: placepulse-backend:milestone-2
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    command:
+      - sh
+      - -ec
+      - >-
+        ruff check --no-cache . &&
+        mypy --cache-dir=/tmp/mypy-cache &&
+        pytest -o cache_dir=/tmp/pytest-cache -vv
+    environment:
+      PLACEPULSE_ENV: test
+      PLACEPULSE_LOG_LEVEL: INFO
+      PLACEPULSE_POSTGRES_HOST: postgres
+      PLACEPULSE_POSTGRES_PORT: "5432"
+      PLACEPULSE_POSTGRES_DB: ${PLACEPULSE_POSTGRES_DB:-placepulse}
+      PLACEPULSE_POSTGRES_USER: ${PLACEPULSE_POSTGRES_USER:-placepulse}
+      PLACEPULSE_POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PLACEPULSE_REDIS_HOST: redis
+      PLACEPULSE_REDIS_PORT: "6379"
+      PLACEPULSE_REDIS_USER: ${PLACEPULSE_REDIS_USER:-placepulse}
+      PLACEPULSE_REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      PLACEPULSE_SEED_PASSWORD_FILE: /run/secrets/seed_password
+      PLACEPULSE_DB_POOL_SIZE: "2"
+      PLACEPULSE_DB_MAX_OVERFLOW: "0"
+      PLACEPULSE_REDIS_POOL_SIZE: "4"
+      PLACEPULSE_CONNECT_TIMEOUT_SECONDS: "2"
+      PLACEPULSE_READINESS_TIMEOUT_SECONDS: "1"
+    secrets:
+      - postgres_password
+      - redis_password
+      - seed_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - core
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    init: true
+    security_opt:
+      - no-new-privileges:true

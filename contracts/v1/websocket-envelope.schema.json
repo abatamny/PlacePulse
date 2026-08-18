@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placepulse.local/contracts/v1/websocket-envelope.schema.json",
+  "title": "PlacePulse WebSocket command or event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "type", "occurred_at", "payload"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "format": "uuid" },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:\\.[a-z][a-z0-9_]*)+$",
+      "maxLength": 96
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    },
+    "correlation_id": { "type": ["string", "null"], "format": "uuid" },
+    "payload": { "type": "object" }
+  }
+}

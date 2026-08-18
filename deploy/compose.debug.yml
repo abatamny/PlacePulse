@@ -1,0 +1,5 @@
+# Local diagnostics only. Never combine this overlay with the Azure overlay.
+services:
+  api:
+    ports:
+      - "127.0.0.1:8000:8000"

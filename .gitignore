@@ -1,0 +1,32 @@
+.env
+.env.*
+!.env.example
+.secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+
+# Frontend and test tooling
+node_modules/
+playwright-report/
+test-results/
+
+# Local runtime data and generated output
+*.log
+dist/
+build/
+coverage/
+.cache/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placepulse.local/contracts/v1/queue-job.schema.json",
+  "title": "PlacePulse queue job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "job_id",
+    "job_type",
+    "actor_id",
+    "idempotency_key",
+    "idempotency_scope",
+    "state",
+    "attempt",
+    "max_attempts",
+    "created_at",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "job_id": { "type": "string", "format": "uuid" },
+    "job_type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:\\.[a-z][a-z0-9_]*)+$",
+      "maxLength": 96
+    },
+    "actor_id": { "type": "string", "format": "uuid" },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "idempotency_scope": { "const": "actor_id+job_type+idempotency_key" },
+    "state": {
+      "enum": [
+        "queued",
+        "processing",
+        "passed",
+        "rejected",
+        "failed",
+        "cancelled",
+        "expired"
+      ]
+    },
+    "attempt": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "max_attempts": { "const": 3 },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    },
+    "correlation_id": { "type": ["string", "null"], "format": "uuid" },
+    "payload": { "type": "object" }
+  }
+}
