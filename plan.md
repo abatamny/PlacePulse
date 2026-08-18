@@ -14,10 +14,13 @@ The plan is based on the PlacePulse project proposal, the project-wide course gu
 | 1 - PostgreSQL/PostGIS and Redis | Complete | 2026-08-18 |
 | 2 - Backend Image, API, and Bootstrap | Complete | 2026-08-18 |
 | 3 - Web Container and React Shell | Complete | 2026-08-18 |
+| 4 - First Complete Location Slice | Complete | 2026-08-18 |
 
-Milestone 4 is the next active milestone. Milestone 3 provides the compiled
-React PWA, Caddy-only public gateway, same-origin API and WebSocket routing,
-and browser system-test foundation.
+Milestone 4 passed its clean Docker Compose workflow on 2026-08-18: migrations
+and seeds ran from empty volumes, all backend and integration checks passed,
+the compiled web/API stack became healthy, logs contained no sensitive
+location or authentication values, and the isolated mobile Playwright suite
+passed through Caddy.
 
 ## Core Architecture Decisions
 
@@ -248,19 +251,28 @@ Create the only client-facing container.
 
 ## Milestone 4 - First Complete Location Slice
 
+**Status: Complete (verified 2026-08-18).**
+
 Implement the smallest end-to-end version of the central PlacePulse concept.
 
 ### Work
 
-- Implement registration and login using securely hashed passwords.
-- Implement the chosen verification-provider interface.
-- Store initial OSM place polygons in PostGIS.
-- Obtain browser coordinates from the React application.
-- Submit coordinates through the API.
-- Resolve containing and nested places using PostGIS.
-- Return the selected place to the frontend.
-- Display the current place and location status.
-- Record visit entry and exit timestamps.
+- Implement registration and provisional login with Argon2id, Redis sessions,
+  CSRF protection, generic login failures, and endpoint-specific rate limits.
+- Keep email verification explicitly unverified behind an injectable provider;
+  the normal adapter is disabled until a provider is configured.
+- Seed the reviewed Taub Computer Science Building polygon as a child of the
+  Technion campus using the independent `milestone-4-osm-v1` seed entry.
+- Request a one-shot browser coordinate only after an authenticated user action.
+- Resolve candidates with boundary-inclusive PostGIS containment and
+  geography-based uncertainty distances.
+- Use `deepest_confident_containing` as Milestone 4's provisional deterministic
+  layer-selection rule: select the deepest place whose full reported accuracy
+  radius is contained, fall back to a confident parent, and otherwise return an
+  explicit ambiguous, unknown, or low-accuracy result.
+- Display the selected place, leaf-to-root hierarchy, reason, and visit time.
+- Record visit entry and exit only on explicit resolution transitions, Leave,
+  or logout.
 
 ### Exit criteria
 
@@ -276,7 +288,7 @@ Add foreground presence and live place-based communication.
 ### Work
 
 - Implement foreground presence heartbeats in Redis.
-- Implement place entry, exit, visit history, and rank calculation.
+- Extend explicit visits with history views and rank calculation.
 - Implement `VISITOR` and `BELONG` behavior.
 - Add authenticated WebSocket connections.
 - Implement basic KNOCK messaging.
@@ -350,7 +362,11 @@ Connect the real local AI services through the existing fair queue.
 - Require schema-validated structured responses.
 - Add inference timeouts, concurrency limits, and bounded retries.
 - Use QwenGuard for text-safety and jailbreak classification.
-- Use Qwen3.5 for nested-place intent, image/frame inspection, and event analysis.
+- Replace only Milestone 4's deterministic place-layer selection step with
+  Qwen3.5 nested-place intent selection through the worker queue. The model may
+  choose only among candidates already verified by PostGIS, and raw coordinates
+  are never sent to an LLM.
+- Use Qwen3.5 for image/frame inspection and event analysis.
 - Treat model output as untrusted data.
 - Fail closed when required moderation is unavailable.
 - Store moderation evidence, reason codes, and model versions.

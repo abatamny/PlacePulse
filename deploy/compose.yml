@@ -1,5 +1,5 @@
 x-backend-common: &backend-common
-  image: placepulse-backend:milestone-3
+  image: placepulse-backend:milestone-4
   build:
     context: ..
     dockerfile: backend/Dockerfile
@@ -20,6 +20,8 @@ x-backend-common: &backend-common
     PLACEPULSE_REDIS_POOL_SIZE: ${PLACEPULSE_REDIS_POOL_SIZE:-20}
     PLACEPULSE_CONNECT_TIMEOUT_SECONDS: ${PLACEPULSE_CONNECT_TIMEOUT_SECONDS:-2}
     PLACEPULSE_READINESS_TIMEOUT_SECONDS: ${PLACEPULSE_READINESS_TIMEOUT_SECONDS:-1}
+    PLACEPULSE_SESSION_TTL_SECONDS: ${PLACEPULSE_SESSION_TTL_SECONDS:-43200}
+    PLACEPULSE_MAX_LOCATION_ACCURACY_METERS: ${PLACEPULSE_MAX_LOCATION_ACCURACY_METERS:-100}
   secrets:
     - postgres_password
     - redis_password
@@ -141,7 +143,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: placepulse-web:milestone-3
+    image: placepulse-web:milestone-4
     build:
       context: ..
       dockerfile: frontend/Dockerfile

@@ -2,8 +2,9 @@
 
 - Backend unit, contract, integration, and security tests live under
   `backend/tests/`.
-- Browser system tests live under `tests/e2e/`; Milestone 3 covers the compiled
-  PWA, Caddy gateway, WebSocket transport, request limits, and offline shell.
+- Browser system tests live under `tests/e2e/`; Milestone 4 covers the compiled
+  mobile auth/location flow, Caddy gateway, WebSocket transport, request limits,
+  permission and uncertainty states, and offline shell.
 - Load and fairness tests will live under `tests/load/` when the worker and
   real-time features exist.
 

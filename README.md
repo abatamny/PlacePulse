@@ -1,9 +1,9 @@
 # PlacePulse
 
-PlacePulse is a mobile-first, place-centered social application. Milestones 0–3
-are complete. The current vertical foundation includes versioned contracts,
-PostgreSQL/PostGIS and Redis, the shared FastAPI backend image, migrations and
-deterministic cold seed, plus a compiled React PWA served through Caddy.
+PlacePulse is a mobile-first, place-centered social application. Milestones 0–4
+are complete. A user can register, sign in provisionally, request one browser
+location fix, resolve reviewed nested PostGIS places, and explicitly enter or
+leave a recorded visit through the compiled React PWA and Caddy.
 
 ## Prerequisites
 
@@ -41,6 +41,12 @@ Compose sources these values from the environment and mounts them into
 containers as files under `/run/secrets`. They are never embedded in images.
 The seed password is hashed with Argon2id on first insertion; changing it later
 does not rotate an existing seed account.
+
+Two non-secret Milestone 4 settings are available:
+
+- `PLACEPULSE_SESSION_TTL_SECONDS` is fixed to 43,200 seconds by default.
+- `PLACEPULSE_MAX_LOCATION_ACCURACY_METERS` rejects fixes wider than 100 metres
+  by default without changing the active visit.
 
 Runtime profiles are selected by Compose, not by `.env`: the canonical graph is
 `local`, the Azure overlay is `azure`, and only the test overlay enables `test`.
@@ -107,37 +113,72 @@ curl http://127.0.0.1:8000/health/live
 curl http://127.0.0.1:8000/health/ready
 ```
 
+## Authentication and location API
+
+All browser calls are same-origin under `/api`, use the
+`{data, meta, request_id}` envelope, and return `Cache-Control: no-store`.
+FastAPI's generated OpenAPI UI is available through `/api/docs` while the stack
+is running.
+
+| Browser endpoint | Purpose |
+| --- | --- |
+| `GET /api/auth/session` | Restore anonymous/authenticated state and establish CSRF. |
+| `POST /api/auth/register` | Create an unverified account without signing in. |
+| `POST /api/auth/login` | Create and rotate a 12-hour Redis session. |
+| `POST /api/auth/logout` | End the active visit, revoke the session, and clear cookies. |
+| `GET /api/location/current` | Restore the active visit without coordinates. |
+| `POST /api/location/resolve` | Resolve one latitude/longitude/accuracy fix and transition visits. |
+| `POST /api/location/leave` | Idempotently end the active visit. |
+
+Call `GET /api/auth/session` first. Every state-changing request must echo the
+returned CSRF token in `X-CSRF-Token`; the browser client does this
+automatically. Session tokens are opaque 256-bit values, only their SHA-256
+digests are Redis keys, and browser cookies are host-only, SameSite, and
+HTTP-only for the session. Secure cookies are required on HTTPS and Azure.
+
+Email verification delivery is deliberately not configured in Milestone 4.
+Accounts remain explicitly unverified, API responses report
+`pending_provider_configuration`, and provisional login is allowed. There are
+no public verification endpoints yet.
+
+Location is requested only after the user presses the location action. Use
+`https://localhost:8443` for secure-context testing; browsers also commonly
+treat `http://localhost:8080` as trustworthy for local development. Permission
+denial, unavailable/timeout, offline, low-accuracy, ambiguous, unknown, and
+resolved states are shown without background tracking or unload beacons.
+
 ## Tests
 
 Run deterministic backend tests through the test-only Compose overlay with an
 isolated project name:
 
 ```sh
-docker compose -p placepulse-test \
+docker compose --env-file .env -p placepulse-test \
   -f deploy/compose.yml \
   -f deploy/compose.test.yml \
-  run --rm test-runner
+  run --rm --build test-runner
 ```
 
 The test runner first applies Ruff and strict mypy gates, then covers contracts,
-settings, health behavior, request IDs, logging redaction, migrations, real
-PostgreSQL/PostGIS and Redis connectivity, spatial containment, and seed
-idempotency. It also verifies that the transport-only WebSocket probe is
-available exclusively in the test profile. Test project volumes must never be
-shared with local development.
+settings, health behavior, request IDs, logging redaction, migrations, auth and
+CSRF behavior, real Redis sessions/rate limits, PostGIS uncertainty and nested
+selection, visit concurrency, and seed idempotency. It also verifies that the
+transport-only WebSocket probe is available exclusively in the test profile.
+Test project volumes must never be shared with local development.
 
 Run the compiled frontend system tests through Caddy and Chromium:
 
 ```sh
-docker compose -p placepulse-e2e-test \
+docker compose --env-file .env -p placepulse-e2e-test \
   -f deploy/compose.yml \
   -f deploy/compose.test.yml \
   run --rm --build e2e
 ```
 
-These tests cover narrow-screen layout, SPA fallback, React-to-API routing,
-security and cache headers, compression, request-size enforcement, WebSocket
-upgrades, service-worker cache isolation, and offline shell behavior.
+These tests cover the mobile register/login/location/restore/leave/logout flow,
+permission denial, low accuracy, unknown and ambiguous places, rapid clicks,
+offline behavior, SPA fallback, gateway security, WebSocket transport, and
+service-worker cache isolation.
 
 On PowerShell, the isolated normal-restart persistence check is:
 
@@ -147,10 +188,11 @@ On PowerShell, the isolated normal-restart persistence check is:
 
 ## Seed data
 
-The cold seed is insert-only and uses deterministic UUIDs. It creates one
-Technion campus place, three fictional `.invalid` users, two campus posts, three
-comments, and one seed-registry row. Rerunning bootstrap does not duplicate or
-overwrite those rows.
+The cold seed is insert-only and uses deterministic UUIDs. The foundation seed
+creates the Technion campus, three fictional `.invalid` users, two campus posts,
+and three comments. The independent `milestone-4-osm-v1` seed inserts Taub
+Computer Science Building as a child only after PostGIS verifies it is valid and
+covered by Technion. Rerunning bootstrap does not duplicate or overwrite rows.
 
 The campus boundary is derived from
 [OpenStreetMap way 66098525, version 35](https://www.openstreetmap.org/way/66098525/history/35).
@@ -171,10 +213,10 @@ tests/          Browser system tests plus future load-test layout
 
 ## Current scope boundaries
 
-There is no authentication or social-content API yet. Caddy supports WebSocket
-upgrades, but application WebSocket behavior, foreground presence, the worker
-and fair queue, media handling, MinIO, and local AI services remain assigned to
-later milestones. A small echo endpoint exists only in the test profile to prove
-the WebSocket transport path. The shared backend image deliberately has no
-default worker or Uvicorn command; Compose supplies explicit commands for
-`api`, `bootstrap`, and tests.
+Milestone 4 includes HTTP authentication, deterministic place resolution, and
+explicit visits. It does not include verification delivery, foreground
+presence, authenticated application WebSockets, social-content APIs, the
+worker/fair queue, media handling, MinIO, or local AI services. A small echo
+endpoint exists only in the test profile to prove the WebSocket transport path.
+The shared backend image deliberately has no default worker or Uvicorn command;
+Compose supplies explicit commands for `api`, `bootstrap`, and tests.
