@@ -1,0 +1,175 @@
+x-backend-common: &backend-common
+  image: placepulse-backend:milestone-2
+  build:
+    context: ..
+    dockerfile: backend/Dockerfile
+  environment: &backend-environment
+    PLACEPULSE_ENV: ${PLACEPULSE_ENV:-local}
+    PLACEPULSE_LOG_LEVEL: ${PLACEPULSE_LOG_LEVEL:-INFO}
+    PLACEPULSE_POSTGRES_HOST: postgres
+    PLACEPULSE_POSTGRES_PORT: "5432"
+    PLACEPULSE_POSTGRES_DB: ${PLACEPULSE_POSTGRES_DB:-placepulse}
+    PLACEPULSE_POSTGRES_USER: ${PLACEPULSE_POSTGRES_USER:-placepulse}
+    PLACEPULSE_POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    PLACEPULSE_REDIS_HOST: redis
+    PLACEPULSE_REDIS_PORT: "6379"
+    PLACEPULSE_REDIS_USER: ${PLACEPULSE_REDIS_USER:-placepulse}
+    PLACEPULSE_REDIS_PASSWORD_FILE: /run/secrets/redis_password
+    PLACEPULSE_DB_POOL_SIZE: ${PLACEPULSE_DB_POOL_SIZE:-5}
+    PLACEPULSE_DB_MAX_OVERFLOW: ${PLACEPULSE_DB_MAX_OVERFLOW:-5}
+    PLACEPULSE_REDIS_POOL_SIZE: ${PLACEPULSE_REDIS_POOL_SIZE:-20}
+    PLACEPULSE_CONNECT_TIMEOUT_SECONDS: ${PLACEPULSE_CONNECT_TIMEOUT_SECONDS:-2}
+    PLACEPULSE_READINESS_TIMEOUT_SECONDS: ${PLACEPULSE_READINESS_TIMEOUT_SECONDS:-1}
+  secrets:
+    - postgres_password
+    - redis_password
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5@sha256:83e9999dc3ad8390c210e76130c3a16365ef4f957bb55200d22b7937cfbcb321
+    environment:
+      POSTGRES_DB: ${PLACEPULSE_POSTGRES_DB:-placepulse}
+      POSTGRES_USER: ${PLACEPULSE_POSTGRES_USER:-placepulse}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - core
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    stop_grace_period: 30s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: redis:7.4.10-alpine3.21@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
+    entrypoint:
+      - /usr/local/bin/placepulse-redis-entrypoint.sh
+    environment:
+      PLACEPULSE_REDIS_USER: ${PLACEPULSE_REDIS_USER:-placepulse}
+    secrets:
+      - redis_password
+    configs:
+      - source: redis_config
+        target: /usr/local/etc/redis/redis.conf
+        mode: 0444
+      - source: redis_entrypoint
+        target: /usr/local/bin/placepulse-redis-entrypoint.sh
+        mode: 0555
+    volumes:
+      - redis_data:/data
+    read_only: true
+    tmpfs:
+      - /run/redis:size=1m,mode=0700
+      - /tmp:size=16m,mode=1777
+    networks:
+      - core
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$$(cat /run/secrets/redis_password)" redis-cli --user "$${PLACEPULSE_REDIS_USER}" ping | grep -q PONG
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    stop_grace_period: 20s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  bootstrap:
+    <<: *backend-common
+    command: ["python", "-m", "placepulse.bootstrap"]
+    environment:
+      <<: *backend-environment
+      PLACEPULSE_SEED_PASSWORD_FILE: /run/secrets/seed_password
+    secrets:
+      - postgres_password
+      - seed_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - core
+    restart: "no"
+
+  api:
+    <<: *backend-common
+    command:
+      - uvicorn
+      - placepulse.api.app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --no-access-log
+      - --log-config
+      - uvicorn-log-config.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - edge
+      - core
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+configs:
+  redis_config:
+    file: ./redis/redis.conf
+  redis_entrypoint:
+    file: ./redis/entrypoint.sh
+
+secrets:
+  postgres_password:
+    environment: PLACEPULSE_POSTGRES_PASSWORD
+  redis_password:
+    environment: PLACEPULSE_REDIS_PASSWORD
+  seed_password:
+    environment: PLACEPULSE_SEED_PASSWORD
+
+networks:
+  edge:
+    internal: true
+  core:
+    internal: true
+  ai:
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  ollama_models:
+  qwen_guard_models:
+  caddy_data:
+  caddy_config:

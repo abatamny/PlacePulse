@@ -1,0 +1,3 @@
+# Local behavior intentionally matches the canonical graph. The web service will
+# publish 8080/8443 when Milestone 3 is implemented.
+services: {}

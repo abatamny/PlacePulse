@@ -1,0 +1,9 @@
+# Azure changes deployment policy only; application behavior and service
+# topology remain identical to the canonical graph.
+services:
+  postgres:
+    restart: always
+  redis:
+    restart: always
+  api:
+    restart: always
