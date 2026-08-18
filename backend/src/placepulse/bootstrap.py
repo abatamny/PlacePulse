@@ -249,9 +249,7 @@ async def apply_seed(settings: Settings) -> bool:
 def run_migrations(settings: Settings) -> None:
     configuration = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
     configuration.attributes["configure_logger"] = False
-    configuration.set_main_option(
-        "sqlalchemy.url", settings.database_url.render_as_string(hide_password=False)
-    )
+    configuration.attributes["database_url"] = settings.database_url
     command.upgrade(configuration, "head")
 
 

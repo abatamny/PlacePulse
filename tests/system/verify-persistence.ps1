@@ -17,6 +17,21 @@ foreach ($secretName in @(
     }
 }
 
+$databaseUser = [Environment]::GetEnvironmentVariable('PLACEPULSE_POSTGRES_USER')
+if ([string]::IsNullOrWhiteSpace($databaseUser)) {
+    $databaseUser = 'placepulse'
+}
+$databaseName = [Environment]::GetEnvironmentVariable('PLACEPULSE_POSTGRES_DB')
+if ([string]::IsNullOrWhiteSpace($databaseName)) {
+    $databaseName = 'placepulse'
+}
+$placeCountQuery = "SELECT count(*) FROM places WHERE osm_type = 'way' AND osm_id = 66098525"
+$redisUser = [Environment]::GetEnvironmentVariable('PLACEPULSE_REDIS_USER')
+if ([string]::IsNullOrWhiteSpace($redisUser)) {
+    $redisUser = 'placepulse'
+}
+$redisAuthentication = "REDISCLI_AUTH=$([Environment]::GetEnvironmentVariable('PLACEPULSE_REDIS_PASSWORD'))"
+
 $compose = @(
     'compose', '-p', $ProjectName,
     '-f', 'deploy/compose.yml',
@@ -24,18 +39,18 @@ $compose = @(
 )
 
 function Invoke-Compose {
-    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
-    & docker @compose @Arguments
+    $commandArguments = @($args)
+    & docker @compose @commandArguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Docker Compose command failed: $($Arguments -join ' ')"
+        throw 'Docker Compose command failed.'
     }
 }
 
 function Read-ComposeValue {
-    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
-    $output = & docker @compose @Arguments
+    $commandArguments = @($args)
+    $output = & docker @compose @commandArguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Docker Compose query failed: $($Arguments -join ' ')"
+        throw 'Docker Compose query failed.'
     }
     return ($output | Out-String).Trim()
 }
@@ -44,12 +59,12 @@ try {
     Invoke-Compose up -d --wait postgres redis
     Invoke-Compose up --no-deps bootstrap
 
-    $placeCountBefore = Read-ComposeValue exec -T postgres sh -ec 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM places WHERE osm_type = ''way'' AND osm_id = 66098525"'
+    $placeCountBefore = Read-ComposeValue exec -T postgres psql -U $databaseUser -d $databaseName -tAc $placeCountQuery
     if ($placeCountBefore -ne '1') {
         throw "Expected one seeded campus row before restart; found $placeCountBefore."
     }
 
-    $redisSet = Read-ComposeValue exec -T redis sh -ec 'export REDISCLI_AUTH="$(cat /run/secrets/redis_password)"; redis-cli --user "$PLACEPULSE_REDIS_USER" SET placepulse:test:persistence survived'
+    $redisSet = Read-ComposeValue exec -T -e $redisAuthentication redis redis-cli --user $redisUser SET placepulse:test:persistence survived
     if ($redisSet -ne 'OK') {
         throw 'Could not create the Redis persistence probe.'
     }
@@ -57,14 +72,14 @@ try {
     Invoke-Compose restart postgres redis
     Invoke-Compose up -d --wait postgres redis
 
-    $placeCountAfter = Read-ComposeValue exec -T postgres sh -ec 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM places WHERE osm_type = ''way'' AND osm_id = 66098525"'
-    $redisAfter = Read-ComposeValue exec -T redis sh -ec 'export REDISCLI_AUTH="$(cat /run/secrets/redis_password)"; redis-cli --user "$PLACEPULSE_REDIS_USER" GET placepulse:test:persistence'
+    $placeCountAfter = Read-ComposeValue exec -T postgres psql -U $databaseUser -d $databaseName -tAc $placeCountQuery
+    $redisAfter = Read-ComposeValue exec -T -e $redisAuthentication redis redis-cli --user $redisUser GET placepulse:test:persistence
 
     if ($placeCountAfter -ne '1' -or $redisAfter -ne 'survived') {
         throw 'PostgreSQL or Redis data did not survive a normal restart.'
     }
 
-    Read-ComposeValue exec -T redis sh -ec 'export REDISCLI_AUTH="$(cat /run/secrets/redis_password)"; redis-cli --user "$PLACEPULSE_REDIS_USER" DEL placepulse:test:persistence' | Out-Null
+    Read-ComposeValue exec -T -e $redisAuthentication redis redis-cli --user $redisUser DEL placepulse:test:persistence | Out-Null
     Write-Output 'PostgreSQL and Redis persistence checks passed.'
 }
 finally {

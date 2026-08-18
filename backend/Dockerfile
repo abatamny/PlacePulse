@@ -23,5 +23,6 @@ RUN groupadd --gid 10001 placepulse \
 WORKDIR /app/backend
 COPY --from=builder --chown=placepulse:placepulse /app/backend /app/backend
 COPY --chown=placepulse:placepulse data/osm /app/data/osm
+COPY --chown=placepulse:placepulse contracts /app/contracts
 
 USER 10001:10001

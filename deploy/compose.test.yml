@@ -5,7 +5,13 @@ services:
     build:
       context: ..
       dockerfile: backend/Dockerfile
-    command: ["sh", "-ec", "ruff check . && mypy && pytest -vv"]
+    command:
+      - sh
+      - -ec
+      - >-
+        ruff check --no-cache . &&
+        mypy --cache-dir=/tmp/mypy-cache &&
+        pytest -o cache_dir=/tmp/pytest-cache -vv
     environment:
       PLACEPULSE_ENV: test
       PLACEPULSE_LOG_LEVEL: INFO
@@ -37,7 +43,6 @@ services:
         condition: service_completed_successfully
     networks:
       - core
-    read_only: true
     tmpfs:
       - /tmp:size=128m,mode=1777
     init: true

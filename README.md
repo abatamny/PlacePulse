@@ -42,6 +42,11 @@ containers as files under `/run/secrets`. They are never embedded in images.
 The seed password is hashed with Argon2id on first insertion; changing it later
 does not rotate an existing seed account.
 
+Secret-consuming services keep `no-new-privileges` enabled, and the backend
+runs as a dedicated non-root user. Their root filesystems remain writable
+because current Docker Desktop cannot inject environment-backed Compose secrets
+into a service configured with a read-only root filesystem.
+
 ## Compose layout
 
 `deploy/compose.yml` is canonical. The repository-root `compose.yml` includes it

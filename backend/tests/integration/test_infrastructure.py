@@ -19,9 +19,7 @@ pytestmark = pytest.mark.integration
 def test_alembic_upgrade_is_idempotent() -> None:
     settings = get_settings()
     config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
-    config.set_main_option(
-        "sqlalchemy.url", settings.database_url.render_as_string(hide_password=False)
-    )
+    config.attributes["database_url"] = settings.database_url
     command.upgrade(config, "head")
 
 

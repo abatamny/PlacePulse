@@ -24,7 +24,6 @@ x-backend-common: &backend-common
     - postgres_password
     - redis_password
   init: true
-  read_only: true
   tmpfs:
     - /tmp:size=64m,mode=1777
   security_opt:
@@ -59,6 +58,7 @@ services:
   redis:
     image: redis:7.4.10-alpine3.21@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
     entrypoint:
+      - /bin/sh
       - /usr/local/bin/placepulse-redis-entrypoint.sh
     environment:
       PLACEPULSE_REDIS_USER: ${PLACEPULSE_REDIS_USER:-placepulse}
@@ -67,13 +67,10 @@ services:
     configs:
       - source: redis_config
         target: /usr/local/etc/redis/redis.conf
-        mode: 0444
       - source: redis_entrypoint
         target: /usr/local/bin/placepulse-redis-entrypoint.sh
-        mode: 0555
     volumes:
       - redis_data:/data
-    read_only: true
     tmpfs:
       - /run/redis:size=1m,mode=0700
       - /tmp:size=16m,mode=1777
