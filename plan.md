@@ -178,11 +178,18 @@ Build the core persistent-data and coordination infrastructure.
 
 Create the shared backend image and the first runnable backend services.
 
+The initial implementation intentionally introduces the minimal user, place,
+post, and comment schema needed for deterministic cold seeding. This is database
+and seed infrastructure only; social endpoints remain in their later milestones.
+The backend image is kept command-agnostic, but the `worker` service and all
+queue-processing behavior remain deferred until Milestone 6.
+
 ### Work
 
 - Create the Python/FastAPI backend image.
 - Run Uvicorn in the `api` container.
-- Reuse the backend image for `worker`, `bootstrap`, and tests.
+- Reuse the backend image for `api`, `bootstrap`, and tests; keep it suitable for
+  the worker command that will be added in Milestone 6.
 - Add `/health/live` and `/health/ready`.
 - Configure PostgreSQL and Redis clients.
 - Add Alembic migrations.
