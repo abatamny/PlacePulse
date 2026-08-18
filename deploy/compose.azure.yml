@@ -1,9 +1,19 @@
 # Azure changes deployment policy only; application behavior and service
 # topology remain identical to the canonical graph.
 services:
+  web:
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+    restart: always
   postgres:
     restart: always
   redis:
     restart: always
   api:
+    environment:
+      PLACEPULSE_ENV: azure
     restart: always
+  bootstrap:
+    environment:
+      PLACEPULSE_ENV: azure

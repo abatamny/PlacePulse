@@ -1,10 +1,10 @@
 x-backend-common: &backend-common
-  image: placepulse-backend:milestone-2
+  image: placepulse-backend:milestone-3
   build:
     context: ..
     dockerfile: backend/Dockerfile
   environment: &backend-environment
-    PLACEPULSE_ENV: ${PLACEPULSE_ENV:-local}
+    PLACEPULSE_ENV: local
     PLACEPULSE_LOG_LEVEL: ${PLACEPULSE_LOG_LEVEL:-INFO}
     PLACEPULSE_POSTGRES_HOST: postgres
     PLACEPULSE_POSTGRES_PORT: "5432"
@@ -140,6 +140,43 @@ services:
     stop_grace_period: 20s
     restart: unless-stopped
 
+  web:
+    image: placepulse-web:milestone-3
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - edge
+      - ingress
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - http://127.0.0.1/healthz
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+    stop_grace_period: 20s
+    restart: unless-stopped
+
 configs:
   redis_config:
     file: ./redis/redis.conf
@@ -157,6 +194,9 @@ secrets:
 networks:
   edge:
     internal: true
+  # Docker does not publish ports from a container attached only to internal
+  # networks. Keep API traffic isolated on edge and expose only Caddy here.
+  ingress:
   core:
     internal: true
   ai:
