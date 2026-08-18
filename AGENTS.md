@@ -24,7 +24,7 @@ At the start of every task:
 4. Inspect the working tree and preserve unrelated user changes.
 5. State any assumption that could materially affect architecture, security, data, or product behavior.
 
-Current user instructions take precedence. `plan.md` is the implementation roadmap. The project proposal and course guidelines define required behavior. If these sources conflict, do not silently choose one: describe the conflict and request a decision.
+Current user instructions take precedence. `plan.md` is the implementation roadmap.
 
 ## Milestone Discipline
 
